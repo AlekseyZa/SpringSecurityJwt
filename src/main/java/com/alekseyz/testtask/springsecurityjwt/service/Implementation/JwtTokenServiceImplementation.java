@@ -10,6 +10,7 @@ import com.alekseyz.testtask.springsecurityjwt.service.JwtTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,12 +20,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 @RequiredArgsConstructor
@@ -58,7 +58,7 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
                 .subject(user.getUsername())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey(tokenSecret))
+                .signWith(getSigningKey(tokenSecret), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -122,11 +122,32 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
         return claimsResolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {       //Проверить, а то рандомно составил
-        return Jwts.parser()
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+    private Claims extractAllClaims(String token) {
+        byte[] keyBytes = Base64.getDecoder().decode(accessTokenSecret.getBytes(StandardCharsets.UTF_8));  //Сделать нормально, убрать хард только на аксес секрет
+        SecretKeySpec key = new SecretKeySpec(keyBytes, "HmacSHA256");
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!ExtractClaim");//Проверить, а то рандомно составил
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+
+
+//                .parserBuilder()
+//                .setSigningKey(getSignInKey())
+//                .build()
+//                .parseClaimsJws(token)
+//                .getBody();
+//
+//
+//        Jwts.parser().verifyWith(Key).build().parseSignedClaims(token).getPayload();
+//                Jwts.parser()
+//                .build()
+//                .parseSignedClaims(token)
+//                .getPayload();
+
+
+
+//        Jwts.
+//                parserBuilder()
+//                .setSigningKey(Keys.hmacShaKeyFor(key))
+//                .build().parseClaimsJws(token);
     }
 
     //Блокируем другие живые токены
