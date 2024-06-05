@@ -21,9 +21,8 @@ public class Token {
     @Column(unique = true)
     public String token;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "token_type")
-    public TokenType tokenType = TokenType.BEARER;
+    @Column(name = "type")
+    public String tokenType;
 
     @Column(name = "revoked")
     public Boolean revoked;

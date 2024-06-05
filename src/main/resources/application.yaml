@@ -13,8 +13,8 @@ spring:
 jwt:
   access-token-secret: kl3hn5k2p5i2pgb5j5b23jp4bh5i23o4bhj23b5k2j3b523gv5uy2t3fv4dxfg4123l5
   refresh-token-secret: kl3hn5k2p5i2pgb5j5b23jp4bh5i23o4bhj23b5k2j3b523gv5uy2t3fv4dxfg4123l5
-  access-token-expiration: 100000
-  refresh-token-expiration: 500000
+  access-token-expiration: 1000000
+  refresh-token-expiration: 5000000
   access-token-key: '{"kty":"oct","k":"hi7S5RX5ZRZooHA0RKGctZ-KtR9FoESgCnH-3BNg5XI"}'
   refresh-token-key: '{"kty":"oct","k":"956PBFst1FguLr5irJD-aQ"}'
 server:

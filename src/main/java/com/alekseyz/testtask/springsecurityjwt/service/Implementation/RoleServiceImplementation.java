@@ -6,14 +6,17 @@ import com.alekseyz.testtask.springsecurityjwt.service.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 
 @Service
 @RequiredArgsConstructor
 public class RoleServiceImplementation implements RoleService {
 
     private final RoleRepository roleRepository;
+
     @Override
-    public Role getUserRole() {
-        return roleRepository.findByName("ROLE_USER").get();
+    public List<Role> getStandartUserRole() {
+        return List.of(roleRepository.findByName("ROLE_USER").orElseThrow());
     }
 }

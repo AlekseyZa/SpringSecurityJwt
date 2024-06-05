@@ -7,8 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.RequestBody;
 
 public interface AuthenticationService {
-    void refreshToken(HttpServletRequest request, HttpServletResponse response);
+    AuthenticationUserResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response);
 
-    AuthenticationUserResponseDto createAuthToken(
+    AuthenticationUserResponseDto authentication(
             @RequestBody AuthenticationUserRequestDto authenticationUserRequestDto);
 }

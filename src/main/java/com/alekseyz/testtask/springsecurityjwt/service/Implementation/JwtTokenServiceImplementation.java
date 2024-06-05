@@ -2,15 +2,13 @@ package com.alekseyz.testtask.springsecurityjwt.service.Implementation;
 
 import com.alekseyz.testtask.springsecurityjwt.dto.AuthenticationUserResponseDto;
 import com.alekseyz.testtask.springsecurityjwt.entity.Token;
-import com.alekseyz.testtask.springsecurityjwt.entity.TokenType;
 import com.alekseyz.testtask.springsecurityjwt.entity.User;
+import com.alekseyz.testtask.springsecurityjwt.exceptionhandling.InvalidToken;
 import com.alekseyz.testtask.springsecurityjwt.repository.TokenRepository;
-import com.alekseyz.testtask.springsecurityjwt.repository.UserRepository;
 import com.alekseyz.testtask.springsecurityjwt.service.JwtTokenService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alekseyz.testtask.springsecurityjwt.service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,11 +19,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.*;
-import java.util.function.Function;
 
 @RequiredArgsConstructor
 @Service
@@ -33,7 +29,7 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
 
 
     private final TokenRepository tokenRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Value("${jwt.access-token-secret}")
     private String accessTokenSecret;
@@ -49,7 +45,11 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
 
     @Override
     public String generateAccessToken(User user) {
-        return generateAccessToken(new HashMap<>(), user);
+        return buildToken(new HashMap<>(), user, accessTokenExpiration, accessTokenSecret);
+    }
+
+    public String generateRefreshToken(User user) {
+        return buildToken(new HashMap<>(), user, refreshTokenExpiration, refreshTokenSecret);
     }
 
     private String buildToken(Map<String, Object> extraClaims, User user, Long expiration, String tokenSecret) {
@@ -58,99 +58,54 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
                 .subject(user.getUsername())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey(tokenSecret), SignatureAlgorithm.HS256)
+                .signWith(getSigningKey(tokenSecret))
                 .compact();
     }
 
     @Override
-    public String generateRefreshToken(User user) {
-        return buildToken(new HashMap<>(), user, refreshTokenExpiration, refreshTokenSecret);
-    }
-
-    @Override
-    public void refreshToken(
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) throws IOException {
+    public AuthenticationUserResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         final String refreshToken;
         final String userName;
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return;
+            throw new InvalidToken("Ошиибка при обновлении токена. Не предоставлен токен обновления");
         }
         refreshToken = authHeader.substring(7);
-        userName = extractUsername(refreshToken);
-        if (userName != null) {
-            User user = userRepository.findByUsername(userName)
-                    .orElseThrow();  //сделать нормальную обработку
-            if (isTokenValid(refreshToken, user)) {
-                String accessToken = generateRefreshToken(user);
-                lockAnotherValidUserTokens(user);
-                saveToken(user, accessToken);
-                AuthenticationUserResponseDto authenticationUserResponseDto = AuthenticationUserResponseDto.builder()
-                        .accessToken(accessToken)
-                        .refreshToken(refreshToken)
-                        .build();
-                new ObjectMapper().writeValue(response.getOutputStream(), authenticationUserResponseDto);
-            }
+        userName = extractAllClaims(refreshToken).getSubject();
+        if (userName == null) {
+            throw new InvalidToken("Ошиибка при обновлении токена. Некорректный токен обновления");
         }
+        User user = userService.findByUsername(userName).orElseThrow();
+        if (!isTokenValid(refreshToken, user)) {
+            throw new InvalidToken("Ошиибка при обновлении токена. Некорректный токен обновления");
+        }
+        String accessToken = generateAccessToken(user);
+        lockAnotherValidUserTokens(user);
+        saveToken(user, accessToken, "Access");
+        return AuthenticationUserResponseDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 
     @Override
-    public String generateToken(User user) {
-        return null;
-    }
-
-    @Override
-    public String generateAccessToken(Map<String, Object> extraClaims, User user) {
-        return buildToken(extraClaims, user, accessTokenExpiration, accessTokenSecret);
-    }
-
-    @Override//проверяет валидность токена
     public boolean isTokenValid(String token, User user) {
-        String username = extractUsername(token);
+        String username = extractAllClaims(token).getSubject();
         return (username.equals(user.getUsername())) && !isTokenExpired(token);
-    }
-
-    @Override  //По токену достает юзера
-    public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
-
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
         byte[] keyBytes = Base64.getDecoder().decode(accessTokenSecret.getBytes(StandardCharsets.UTF_8));  //Сделать нормально, убрать хард только на аксес секрет
         SecretKeySpec key = new SecretKeySpec(keyBytes, "HmacSHA256");
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!ExtractClaim");//Проверить, а то рандомно составил
         return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
-
-
-//                .parserBuilder()
-//                .setSigningKey(getSignInKey())
-//                .build()
-//                .parseClaimsJws(token)
-//                .getBody();
-//
-//
-//        Jwts.parser().verifyWith(Key).build().parseSignedClaims(token).getPayload();
-//                Jwts.parser()
-//                .build()
-//                .parseSignedClaims(token)
-//                .getPayload();
-
-
-
-//        Jwts.
-//                parserBuilder()
-//                .setSigningKey(Keys.hmacShaKeyFor(key))
-//                .build().parseClaimsJws(token);
     }
 
-    //Блокируем другие живые токены
+    @Override
+    public String getUsername(String token){
+        return  extractAllClaims(token).getSubject();
+    }
+
     @Override
     public void lockAnotherValidUserTokens(User user) {
         List<Token> validUserTokens = tokenRepository.findTokensByUserAndExpiredFalseAndRevokedFalse(user);
@@ -164,25 +119,20 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
         tokenRepository.saveAll(validUserTokens);
     }
 
-    //сохранение токена
     @Override
-    public void saveToken(User user, String accesToken) {
-        Token token = Token.builder()
+    public void saveToken(User user, String token, String type) {
+        Token tokenEntity = Token.builder()
                 .user(user)
-                .token(accesToken)
-                .tokenType(TokenType.BEARER)
+                .token(token)
+                .tokenType(type)
                 .expired(false)
                 .revoked(false)
                 .build();
-        tokenRepository.save(token);
+        tokenRepository.save(tokenEntity);
     }
 
     private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        return extractAllClaims(token).getExpiration().before(new Date());
     }
 
     private Key getSigningKey(String tokenSecret) {

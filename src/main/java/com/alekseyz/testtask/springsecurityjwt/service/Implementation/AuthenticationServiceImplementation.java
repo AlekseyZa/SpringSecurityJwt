@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.io.IOException;
 
@@ -27,18 +26,16 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     private final AuthenticationManager authenticationManager;
 
     @Override
-    public AuthenticationUserResponseDto createAuthToken(
-            @RequestBody AuthenticationUserRequestDto authenticationUserRequestDto) {
+    public AuthenticationUserResponseDto authentication(AuthenticationUserRequestDto authenticationUserRequestDto) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         authenticationUserRequestDto.getUsername(),
                         authenticationUserRequestDto.getPassword()));
-        User user = userService.findByUsername(authenticationUserRequestDto.getUsername())
-                .orElseThrow();   //сделать проверку на отсутствие пользователя
+        User user = userService.findByUsername(authenticationUserRequestDto.getUsername()).orElseThrow();
         String accesToken = jwtTokenService.generateAccessToken(user);
         String refreshToken = jwtTokenService.generateRefreshToken(user);
         jwtTokenService.lockAnotherValidUserTokens(user);
-        jwtTokenService.saveToken(user, accesToken);
+        jwtTokenService.saveToken(user, accesToken, "Access");
         return AuthenticationUserResponseDto.builder()
                 .accessToken(accesToken)
                 .refreshToken(refreshToken)
@@ -46,11 +43,11 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     }
 
     @Override
-    public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public AuthenticationUserResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
         try {
-            jwtTokenService.refreshToken(request, response);
+            return jwtTokenService.refreshToken(request, response);
         } catch (IOException e) {
-            throw new RuntimeException(e);        //сделать номральную обработку возможно пробросить
+            throw new RuntimeException("Ошибка при обновлении токена");
         }
     }
 }
