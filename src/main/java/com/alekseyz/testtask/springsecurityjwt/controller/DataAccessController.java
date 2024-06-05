@@ -14,18 +14,18 @@ public class DataAccessController {
 
     @PreAuthorize(value = "hasAuthority('ADMIN')")
     @GetMapping("/admin")
-    public String unsecuredData() {
+    public String adminData() {
         return "Admin page (for user with role ADMIN)";
     }
 
     @PreAuthorize(value = "hasAnyAuthority('USER', 'ADMIN')")
     @GetMapping("/user")
-    public String securedData() {
+    public String userData() {
         return "User page (for user with roles ADMIN or/and USER)";
     }
 
     @GetMapping("/public")
-    public String adminData() {
+    public String publicData() {
         return "public page (for all users)";
     }
 

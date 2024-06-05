@@ -22,35 +22,25 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-
     private final JwtTokenService jwtTokenService;
     private final UserDetailsService userDetailsService;
     private final TokenRepository tokenRepository;
+
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        if (request.getServletPath().contains("/api/v1/authentication")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
         String authHeader = request.getHeader("authorization");
-        String jwtToken;
-        String userName;
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
-        jwtToken = authHeader.substring(7);
-        userName = jwtTokenService.getUsername(jwtToken);
+        String jwtToken = authHeader.substring(7);
+        String userName = jwtTokenService.getUsername(jwtToken);
         if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
-            boolean isTokenValid = tokenRepository.findByToken(jwtToken)
-                    .map(tokenOp -> !tokenOp.getExpired() && !tokenOp.getRevoked())
-                    .orElse(false);
-            if (jwtTokenService.isAccessTokenValid(jwtToken
-                    ) && isTokenValid) {
+            if (jwtTokenService.isAccessTokenValid(jwtToken)) {
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
