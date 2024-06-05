@@ -17,6 +17,6 @@ public class RoleServiceImplementation implements RoleService {
 
     @Override
     public List<Role> getStandartUserRole() {
-        return List.of(roleRepository.findByName("ROLE_USER").orElseThrow());
+        return List.of(roleRepository.findByName("USER").orElseThrow());
     }
 }

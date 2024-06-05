@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class DataAccessController {
 
-    @PreAuthorize(value = "hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize(value = "hasAuthority('ADMIN')")
     @GetMapping("/admin")
     public String unsecuredData() {
-        return "Admin page (for user with role ROLE_ADMIN)";
+        return "Admin page (for user with role ADMIN)";
     }
 
-    @PreAuthorize(value = "hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN')")
+    @PreAuthorize(value = "hasAnyAuthority('USER', 'ADMIN')")
     @GetMapping("/user")
     public String securedData() {
-        return "User page (for user with roles ROLE_ADMIN or/and ROLE_USER)";
+        return "User page (for user with roles ADMIN or/and USER)";
     }
 
     @GetMapping("/public")

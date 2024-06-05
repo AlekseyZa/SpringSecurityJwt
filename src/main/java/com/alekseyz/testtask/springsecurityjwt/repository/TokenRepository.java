@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface TokenRepository extends JpaRepository<Token, Long> {
 
-    List<Token> findTokensByUserAndExpiredFalseAndRevokedFalse(User user);
+    Optional<List<Token>> findTokensByUserAndExpiredFalseAndRevokedFalse(User user);
 
     Optional<Token> findByToken(String token);
 }

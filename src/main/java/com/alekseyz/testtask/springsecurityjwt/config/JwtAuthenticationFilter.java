@@ -2,7 +2,6 @@ package com.alekseyz.testtask.springsecurityjwt.config;
 
 import com.alekseyz.testtask.springsecurityjwt.repository.TokenRepository;
 import com.alekseyz.testtask.springsecurityjwt.service.JwtTokenService;
-import com.alekseyz.testtask.springsecurityjwt.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +26,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenService jwtTokenService;
     private final UserDetailsService userDetailsService;
     private final TokenRepository tokenRepository;
-    private final UserService userService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -45,15 +43,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         jwtToken = authHeader.substring(7);
-        System.out.println(jwtToken);
         userName = jwtTokenService.getUsername(jwtToken);
         if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
             boolean isTokenValid = tokenRepository.findByToken(jwtToken)
                     .map(tokenOp -> !tokenOp.getExpired() && !tokenOp.getRevoked())
                     .orElse(false);
-            if (jwtTokenService.isTokenValid(jwtToken,
-                    userDetails) && isTokenValid) {
+            if (jwtTokenService.isAccessTokenValid(jwtToken
+                    ) && isTokenValid) {
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,

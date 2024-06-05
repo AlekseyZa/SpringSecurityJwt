@@ -3,19 +3,18 @@ package com.alekseyz.testtask.springsecurityjwt.service.Implementation;
 import com.alekseyz.testtask.springsecurityjwt.dto.AuthenticationUserResponseDto;
 import com.alekseyz.testtask.springsecurityjwt.entity.Token;
 import com.alekseyz.testtask.springsecurityjwt.entity.User;
-import com.alekseyz.testtask.springsecurityjwt.exceptionhandling.InvalidToken;
+import com.alekseyz.testtask.springsecurityjwt.exceptionhandling.InvalidTokenException;
 import com.alekseyz.testtask.springsecurityjwt.repository.TokenRepository;
 import com.alekseyz.testtask.springsecurityjwt.service.JwtTokenService;
 import com.alekseyz.testtask.springsecurityjwt.service.JwtUtilService;
 import com.alekseyz.testtask.springsecurityjwt.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-import java.util.*;
+
+import java.util.HashMap;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -24,8 +23,8 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
     @Value("${jwt.access-token-secret}")
     private String accessTokenSecret;
 
-//    @Value("${jwt.refresh-token-secret}")
-//    private String refreshTokenSecret;
+    @Value("${jwt.refresh-token-secret}")
+    private String refreshTokenSecret;
 
     @Value("${jwt.access-token-expiration}")
     private Long accessTokenExpiration;
@@ -39,35 +38,31 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
 
     @Override
     public String generateAccessToken(UserDetails userDetails) {
-        return jwtUtilService.buildToken(new HashMap<>(), userDetails, accessTokenSecret, accessTokenExpiration);
+        return jwtUtilService.buildAccessToken(new HashMap<>(), userDetails, accessTokenSecret, accessTokenExpiration);
     }
 
     @Override
     public String generateRefreshToken(UserDetails userDetails) {
-        return jwtUtilService.buildToken(new HashMap<>(), userDetails, accessTokenSecret, refreshTokenExpiration);
+        return jwtUtilService.buildRefreshToken(userDetails, refreshTokenSecret, refreshTokenExpiration);
     }
 
     @Override
-    public AuthenticationUserResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        final String refreshToken;
-        final String userName;
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new InvalidToken("Ошиибка при обновлении токена. Не предоставлен токен обновления");
+    public AuthenticationUserResponseDto refreshToken(String refreshToken) {
+        if (!jwtUtilService.isTokenValid(refreshToken, refreshTokenSecret)) {
+            throw new InvalidTokenException("Некорректный токен");
         }
-        refreshToken = authHeader.substring(7);
-        userName = jwtUtilService.extractAllClaims(refreshToken, accessTokenSecret).getSubject();
-        if (userName == null) {
-            throw new InvalidToken("Ошиибка при обновлении токена. Некорректный токен обновления");
-        }
+        String userName = jwtUtilService.extractAllClaims(refreshToken, refreshTokenSecret).getSubject();
         User user = userService.findByUsername(userName).orElseThrow();
-        if (!jwtUtilService.isTokenValid(refreshToken, user, accessTokenSecret)) {
-            throw new InvalidToken("Ошиибка при обновлении токена. Некорректный токен обновления");
+        List<Token> tokenList = tokenRepository.findTokensByUserAndExpiredFalseAndRevokedFalse(user)
+                .orElseThrow();
+        if (tokenList.isEmpty()) {
+            throw new InvalidTokenException("Ошиибка при обновлении токена. Некорректный токен обновления");
+        }
+        String refreshTokenFromDB = tokenList.get(0).getToken();
+        if (!(refreshTokenFromDB != null && refreshTokenFromDB.equals(refreshToken))) {
+            throw new InvalidTokenException("Ошиибка при обновлении токена. Некорректный токен обновления");
         }
         String accessToken = generateAccessToken(user);
-        lockAnotherValidUserTokens(user);
-        saveToken(user, accessToken, "Access");
         return AuthenticationUserResponseDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -76,7 +71,7 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
 
     @Override
     public void lockAnotherValidUserTokens(User user) {
-        List<Token> validUserTokens = tokenRepository.findTokensByUserAndExpiredFalseAndRevokedFalse(user);
+        List<Token> validUserTokens = tokenRepository.findTokensByUserAndExpiredFalseAndRevokedFalse(user).orElseThrow();
         if (validUserTokens.isEmpty()) {
             return;
         }
@@ -105,8 +100,8 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
     }
 
     @Override
-    public boolean isTokenValid(String jwtAccessToken, UserDetails userDetails) {
-        return jwtUtilService.isTokenValid(jwtAccessToken, userDetails, accessTokenSecret);
+    public boolean isAccessTokenValid(String jwtAccessToken) {
+        return jwtUtilService.isTokenValid(jwtAccessToken, accessTokenSecret);
     }
 
 }

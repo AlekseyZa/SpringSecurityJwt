@@ -22,7 +22,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler
-    public ResponseEntity<TokenError> handleException(InvalidToken e){
+    public ResponseEntity<TokenError> handleException(InvalidTokenException e){
         TokenError data = new TokenError();
         data.setInfo(e.getMessage());
         return new ResponseEntity<>(data, HttpStatus.CONFLICT);

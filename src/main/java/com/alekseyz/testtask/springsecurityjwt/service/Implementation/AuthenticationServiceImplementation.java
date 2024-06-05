@@ -6,15 +6,12 @@ import com.alekseyz.testtask.springsecurityjwt.entity.User;
 import com.alekseyz.testtask.springsecurityjwt.service.AuthenticationService;
 import com.alekseyz.testtask.springsecurityjwt.service.JwtTokenService;
 import com.alekseyz.testtask.springsecurityjwt.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
 
 @Slf4j
 @Service
@@ -32,10 +29,10 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
                         authenticationUserRequestDto.getUsername(),
                         authenticationUserRequestDto.getPassword()));
         User user = userService.findByUsername(authenticationUserRequestDto.getUsername()).orElseThrow();
-        String accesToken = jwtTokenService.generateAccessToken(user);
-        String refreshToken = jwtTokenService.generateRefreshToken(user);
         jwtTokenService.lockAnotherValidUserTokens(user);
-        jwtTokenService.saveToken(user, accesToken, "Access");
+        String refreshToken = jwtTokenService.generateRefreshToken(user);
+        String accesToken = jwtTokenService.generateAccessToken(user);
+        jwtTokenService.saveToken(user, refreshToken, "refresh");
         return AuthenticationUserResponseDto.builder()
                 .accessToken(accesToken)
                 .refreshToken(refreshToken)
@@ -43,11 +40,7 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     }
 
     @Override
-    public AuthenticationUserResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        try {
-            return jwtTokenService.refreshToken(request, response);
-        } catch (IOException e) {
-            throw new RuntimeException("Ошибка при обновлении токена");
-        }
+    public AuthenticationUserResponseDto refreshToken(@NonNull String refreshToken) {
+        return jwtTokenService.refreshToken(refreshToken);
     }
 }

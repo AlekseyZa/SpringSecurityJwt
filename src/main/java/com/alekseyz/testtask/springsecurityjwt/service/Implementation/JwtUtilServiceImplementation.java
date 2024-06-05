@@ -7,7 +7,6 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.Map;
@@ -17,7 +16,7 @@ import java.util.Map;
 public class JwtUtilServiceImplementation implements JwtUtilService {
 
     @Override
-    public String buildToken(Map<String, Object> extraClaims, UserDetails userDetails,
+    public String buildAccessToken(Map<String, Object> extraClaims, UserDetails userDetails,
                              String tokenSecret, Long tokenExpiration) {
         return Jwts.builder()
                 .claims(extraClaims)
@@ -29,19 +28,32 @@ public class JwtUtilServiceImplementation implements JwtUtilService {
     }
 
     @Override
-    public boolean isTokenValid(String token, UserDetails userDetails, String tokenSecret) {
-        String username = extractAllClaims(token, tokenSecret).getSubject();
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token, tokenSecret);
+    public String buildRefreshToken(UserDetails userDetails,
+                             String tokenSecret, Long tokenExpiration) {
+        return Jwts.builder()
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + tokenExpiration))
+                .signWith(getSigningKey(tokenSecret))
+                .compact();
+    }
+
+    @Override
+    public boolean isTokenValid(String token, String tokenSecret) {
+        try {
+            Jwts.parser()
+                    .verifyWith(getSigningKey(tokenSecret))
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
     public String getUsername(String token, String tokenSecret) {
         return extractAllClaims(token, tokenSecret).getSubject();
-    }
-
-    @Override
-    public boolean isTokenExpired(String token, String tokenSecret) {
-        return extractAllClaims(token, tokenSecret).getExpiration().before(new Date());
     }
 
     @Override

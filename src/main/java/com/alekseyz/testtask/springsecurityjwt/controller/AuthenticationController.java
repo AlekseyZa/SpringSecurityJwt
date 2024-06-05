@@ -3,9 +3,8 @@ package com.alekseyz.testtask.springsecurityjwt.controller;
 
 import com.alekseyz.testtask.springsecurityjwt.dto.AuthenticationUserRequestDto;
 import com.alekseyz.testtask.springsecurityjwt.dto.AuthenticationUserResponseDto;
+import com.alekseyz.testtask.springsecurityjwt.dto.RefreshTokenDto;
 import com.alekseyz.testtask.springsecurityjwt.service.AuthenticationService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,9 +25,8 @@ public class AuthenticationController {
     }
 
     @PostMapping("/refresh-token")
-    public AuthenticationUserResponseDto refreshToken(
-            HttpServletRequest request,
-            HttpServletResponse response) {
-        return authenticationService.refreshToken(request, response);
+    public AuthenticationUserResponseDto refreshToken(@RequestBody RefreshTokenDto request
+            ) {
+        return authenticationService.refreshToken(request.getRefreshToken());
     }
 }

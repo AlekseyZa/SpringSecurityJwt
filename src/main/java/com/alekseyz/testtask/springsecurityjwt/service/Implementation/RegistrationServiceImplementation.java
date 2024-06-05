@@ -23,13 +23,13 @@ public class RegistrationServiceImplementation implements RegistrationService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final RegistrationDtoToUser registrationDtoToUser;
     private final RegistrationUserToDto registrationUserToDto;
-    private  final UserService userService;
+    private final UserService userService;
     private final RoleService roleService;
 
     @Override
     public RegistrationUserResponseDto registration(@RequestBody RegistrationUserRequestDto registrationUserRequestDto) {
         if (!registrationUserRequestDto.getPassword().equals(registrationUserRequestDto.getConfirmPassword())) {
-            throw new BadCredentialsException("Пароли не совпадают");         //Доделать обработку ошибок
+            throw new BadCredentialsException("Пароли не совпадают");
         }
         if (userService.findByUsername(registrationUserRequestDto.getUsername()).isPresent()) {
             throw new BadCredentialsException("Пользователь с таким именем уже существует, укажите другой логин");
@@ -44,7 +44,7 @@ public class RegistrationServiceImplementation implements RegistrationService {
                 .map(userService::save)
                 .map(registrationUserToDto::map)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("Ошибка при работе с БД"));      //Поправить
+                        new UsernameNotFoundException("Ошибка при работе с БД"));
     }
 
     private String encodePassword(String password) {
