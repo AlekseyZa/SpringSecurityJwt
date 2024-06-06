@@ -12,27 +12,29 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Table(name = "tokens")
 public class Token {
 
     @Id
-    @GeneratedValue
-    public Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
 
     @Column(unique = true)
-    public String token;
+    private String token;
 
     @Column(name = "type")
-    public String tokenType;
+    private String tokenType;
 
     @Column(name = "revoked")
-    public Boolean revoked;
+    private Boolean revoked;
 
     @Column(name = "expired")
-    public Boolean expired;
+    private Boolean expired;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    public User user;
+    private User user;
 
 
 }
