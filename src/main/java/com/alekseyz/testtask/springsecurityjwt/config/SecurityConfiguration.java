@@ -18,9 +18,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity
 @RequiredArgsConstructor
-@EnableMethodSecurity(securedEnabled = true)
+@EnableMethodSecurity
 public class SecurityConfiguration {
 
     private final UserServiceImplementation userService;
@@ -33,8 +33,14 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/v1/admin", "/api/v1/user").authenticated()
-                        .anyRequest().permitAll())
+                        .requestMatchers("/api/v1/authentication",
+                                "/api/v1/refresh-token",
+                                "/api/v1/registration",
+                                "/api/v1/public",
+                                "/swagger-ui/**",
+                                "/v3/**"
+                                ).permitAll()
+                        .anyRequest().authenticated())
                 .sessionManagement((sessionManagement) -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

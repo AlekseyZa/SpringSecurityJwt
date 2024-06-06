@@ -1,6 +1,5 @@
 package com.alekseyz.testtask.springsecurityjwt.config;
 
-import com.alekseyz.testtask.springsecurityjwt.repository.TokenRepository;
 import com.alekseyz.testtask.springsecurityjwt.service.JwtTokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,8 +23,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
     private final UserDetailsService userDetailsService;
-    private final TokenRepository tokenRepository;
-
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,

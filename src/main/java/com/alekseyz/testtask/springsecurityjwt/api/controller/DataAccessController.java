@@ -1,32 +1,30 @@
-package com.alekseyz.testtask.springsecurityjwt.controller;
+package com.alekseyz.testtask.springsecurityjwt.api.controller;
 
 
+import com.alekseyz.testtask.springsecurityjwt.api.DataAccessApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1")
-public class DataAccessController {
+public class DataAccessController implements DataAccessApi {
 
     @PreAuthorize(value = "hasAuthority('ADMIN')")
-    @GetMapping("/admin")
+    @Override
     public String adminData() {
         return "Admin page (for user with role ADMIN)";
     }
 
     @PreAuthorize(value = "hasAnyAuthority('USER', 'ADMIN')")
-    @GetMapping("/user")
+    @Override
     public String userData() {
         return "User page (for user with roles ADMIN or/and USER)";
     }
 
-    @GetMapping("/public")
+    @Override
     public String publicData() {
-        return "public page (for all users)";
+        return "public page (for all users including anonymous users)";
     }
 
 }
