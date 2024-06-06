@@ -49,7 +49,7 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
     @Override
     public AuthenticationUserResponseDto refreshToken(String refreshToken) {
         if (!jwtUtilService.isTokenValid(refreshToken, refreshTokenSecret)) {
-            throw new InvalidTokenException("Некорректный токен");
+            throw new InvalidTokenException("Некорректный токен обновления");
         }
         String userName = jwtUtilService.extractAllClaims(refreshToken, refreshTokenSecret).getSubject();
         User user = userService.findByUsername(userName).orElseThrow();
