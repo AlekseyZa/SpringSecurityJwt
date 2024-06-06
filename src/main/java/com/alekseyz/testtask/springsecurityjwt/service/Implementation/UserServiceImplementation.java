@@ -1,6 +1,7 @@
 package com.alekseyz.testtask.springsecurityjwt.service.Implementation;
 
 import com.alekseyz.testtask.springsecurityjwt.entity.User;
+import com.alekseyz.testtask.springsecurityjwt.exceptionhandling.UserException;
 import com.alekseyz.testtask.springsecurityjwt.repository.UserRepository;
 import com.alekseyz.testtask.springsecurityjwt.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,8 @@ public class UserServiceImplementation implements UserDetailsService, UserServic
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = findByUsername(username).orElseThrow();
+        User user = findByUsername(username).orElseThrow(() ->
+                new UserException("Пользователь с таким логином не найден: " + username));
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),

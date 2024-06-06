@@ -3,7 +3,8 @@ package com.alekseyz.testtask.springsecurityjwt.service.Implementation;
 import com.alekseyz.testtask.springsecurityjwt.dto.AuthenticationUserResponseDto;
 import com.alekseyz.testtask.springsecurityjwt.entity.Token;
 import com.alekseyz.testtask.springsecurityjwt.entity.User;
-import com.alekseyz.testtask.springsecurityjwt.exceptionhandling.InvalidTokenException;
+import com.alekseyz.testtask.springsecurityjwt.exceptionhandling.TokenException;
+import com.alekseyz.testtask.springsecurityjwt.exceptionhandling.UserException;
 import com.alekseyz.testtask.springsecurityjwt.repository.TokenRepository;
 import com.alekseyz.testtask.springsecurityjwt.service.JwtTokenService;
 import com.alekseyz.testtask.springsecurityjwt.service.JwtUtilService;
@@ -49,18 +50,20 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
     @Override
     public AuthenticationUserResponseDto refreshToken(String refreshToken) {
         if (!jwtUtilService.isTokenValid(refreshToken, refreshTokenSecret)) {
-            throw new InvalidTokenException("Некорректный токен обновления");
+            throw new TokenException("Некорректный токен обновления");
         }
         String userName = jwtUtilService.extractAllClaims(refreshToken, refreshTokenSecret).getSubject();
-        User user = userService.findByUsername(userName).orElseThrow();
+        User user = userService.findByUsername(userName).orElseThrow(() ->
+                new UserException("Пользователь с таким логином не найден: " + userName));
         List<Token> tokenList = tokenRepository.findTokensByUserAndExpiredFalseAndRevokedFalse(user)
-                .orElseThrow();
+                .orElseThrow(() ->
+                        new TokenException("Актуальный токен для указанного пользователя не найден: " + user));
         if (tokenList.isEmpty()) {
-            throw new InvalidTokenException("Ошиибка при обновлении токена. Некорректный токен обновления");
+            throw new TokenException("Ошиибка при обновлении токена. Некорректный токен обновления");
         }
         String refreshTokenFromDB = tokenList.get(0).getToken();
         if (!(refreshTokenFromDB != null && refreshTokenFromDB.equals(refreshToken))) {
-            throw new InvalidTokenException("Ошиибка при обновлении токена. Некорректный токен обновления");
+            throw new TokenException("Ошиибка при обновлении токена. Некорректный токен обновления");
         }
         String accessToken = generateAccessToken(user);
         return AuthenticationUserResponseDto.builder()
@@ -71,7 +74,9 @@ public class JwtTokenServiceImplementation implements JwtTokenService {
 
     @Override
     public void lockAnotherValidUserTokens(User user) {
-        List<Token> validUserTokens = tokenRepository.findTokensByUserAndExpiredFalseAndRevokedFalse(user).orElseThrow();
+        List<Token> validUserTokens =
+                tokenRepository.findTokensByUserAndExpiredFalseAndRevokedFalse(user).orElseThrow(() ->
+                        new TokenException("Для указанного пользователя нет актуальногго токена: " + user.getUsername()));
         if (validUserTokens.isEmpty()) {
             return;
         }

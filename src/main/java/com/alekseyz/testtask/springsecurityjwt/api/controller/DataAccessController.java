@@ -24,6 +24,7 @@ public class DataAccessController implements DataAccessApi {
 
     @Override
     public String publicData() {
+
         return "public page (for all users including anonymous users)";
     }
 

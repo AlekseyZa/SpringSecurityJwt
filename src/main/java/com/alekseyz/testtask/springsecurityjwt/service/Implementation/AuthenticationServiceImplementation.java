@@ -3,6 +3,7 @@ package com.alekseyz.testtask.springsecurityjwt.service.Implementation;
 import com.alekseyz.testtask.springsecurityjwt.dto.AuthenticationUserRequestDto;
 import com.alekseyz.testtask.springsecurityjwt.dto.AuthenticationUserResponseDto;
 import com.alekseyz.testtask.springsecurityjwt.entity.User;
+import com.alekseyz.testtask.springsecurityjwt.exceptionhandling.UserException;
 import com.alekseyz.testtask.springsecurityjwt.service.AuthenticationService;
 import com.alekseyz.testtask.springsecurityjwt.service.JwtTokenService;
 import com.alekseyz.testtask.springsecurityjwt.service.UserService;
@@ -28,7 +29,8 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
                 new UsernamePasswordAuthenticationToken(
                         authenticationUserRequestDto.getUsername(),
                         authenticationUserRequestDto.getPassword()));
-        User user = userService.findByUsername(authenticationUserRequestDto.getUsername()).orElseThrow();
+        User user = userService.findByUsername(authenticationUserRequestDto.getUsername()).orElseThrow(() ->
+                new UserException("Пользователь с таким логином не найден: " + authenticationUserRequestDto.getUsername()));
         jwtTokenService.lockAnotherValidUserTokens(user);
         String refreshToken = jwtTokenService.generateRefreshToken(user);
         String accesToken = jwtTokenService.generateAccessToken(user);
