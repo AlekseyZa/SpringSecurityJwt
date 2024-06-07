@@ -66,23 +66,23 @@ class AuthenticationServiceImplementationTest {
         Assertions.assertNotNull(responseDto.getRefreshToken());
     }
 
-//    @Test
-//    @DisplayName("Тестирование обновления токена доступа с помощью токена обновления")
-//    void refreshAccessToken_returnJwtTokens() {
-//        String refreshToken = "gjhqe5jw4j";
-//        String updatedAccessToken = "1y34jhrjkfdjhasgaergfwe";
-//        AuthenticationUserResponseDto responseDto =
-//                AuthenticationUserResponseDto.builder()
-//                        .accessToken(updatedAccessToken)
-//                        .refreshToken(refreshToken)
-//                        .build();
-//
-//        when(jwtTokenService.refreshToken(refreshToken)).thenReturn(responseDto);
-//
-//        AuthenticationUserResponseDto expectedResponseDto = authenticationServiceImplementation.refreshToken(refreshToken);
-//
-//        Mockito.verify(jwtTokenService,Mockito.atLeastOnce()).refreshToken(refreshToken);
-//        Assertions.assertEquals(expectedResponseDto, responseDto);
-//    }
+    @Test
+    @DisplayName("Тестирование обновления токена доступа с помощью токена обновления")
+    void refreshAccessToken_returnJwtTokens() {
+        String refreshToken = "gjhqe5jw4j";
+        String updatedAccessToken = "1y34jhrjkfdjhasgaergfwe";
+        AuthenticationUserResponseDto responseDto =
+                AuthenticationUserResponseDto.builder()
+                        .accessToken(updatedAccessToken)
+                        .refreshToken(refreshToken)
+                        .build();
+
+        when(jwtTokenService.refreshToken(refreshToken)).thenReturn(responseDto);
+
+        AuthenticationUserResponseDto expectedResponseDto = authenticationServiceImplementation.refreshToken(refreshToken);
+
+        Mockito.verify(jwtTokenService,Mockito.atLeastOnce()).refreshToken(refreshToken);
+        Assertions.assertEquals(expectedResponseDto, responseDto);
+    }
 
 }
